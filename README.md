@@ -868,3 +868,146 @@ public class JwtAuthenticationController {
 
 
 ##  
+
+package com.project.demo.controller;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.project.demo.config.GeneratePdfReport;
+import com.project.demo.config.UserExcelExporter;
+import com.project.demo.model.User;
+import com.project.demo.model.UserData;
+import com.project.demo.service.UserService;
+
+@RestController
+@CrossOrigin()
+public class UserController {
+	@Autowired
+	private UserService userServiceImpl;
+
+	@GetMapping(value = "get")
+	public String getDat() {
+		return "welcome";
+	}
+
+	@PostMapping(value = "/addUser", produces = "application/json")
+	public ResponseEntity<String> addUser(@RequestBody UserData userDetails) {
+		try {
+			User user = new User();
+			user.setUsername(userDetails.getUserName());
+			user.setUserType(userDetails.getUserType());
+			user.setPassword(userDetails.getPassword());
+			user.setEmailId(userDetails.getEmailId());
+			userServiceImpl.save(user);
+		} catch (DataAccessException ex) {
+			System.out.println(ex.getCause().getMessage());
+			return new ResponseEntity<>("Duplicate value not allowed", HttpStatus.ALREADY_REPORTED);
+		} catch (Exception e) {
+			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		return new ResponseEntity<String>("user saved successfully", HttpStatus.CREATED);
+	}
+
+	@PutMapping(value = "/updatePassword", produces = "application/json")
+	public ResponseEntity<String> updatePassword(@RequestParam("id") Integer id, @RequestBody UserData userDetails) {
+
+		int i = userServiceImpl.updatePassword(userDetails.getPassword(), id);
+		if (i > 0) {
+			return new ResponseEntity<>("Password Update successfully", HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>("Password Not Update successfully", HttpStatus.NOT_FOUND);
+		}
+
+	}
+
+	@DeleteMapping(value = "/deleteUser", produces = "application/json")
+	public ResponseEntity<HttpStatus> deleteUser(@RequestParam("id") Integer id) {
+		try {
+			userServiceImpl.deleteById(id);
+			return new ResponseEntity<>(HttpStatus.OK);
+		} catch (Exception e) {
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@GetMapping("/allUsers")
+	public ResponseEntity<List<User>> getAllUser() {
+		try {
+			List<User> users = new ArrayList<User>();
+			userServiceImpl.findAll().forEach(users::add);
+			return new ResponseEntity<>(users, HttpStatus.OK);
+		} catch (Exception e) {
+			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@GetMapping("/getMatchUser")
+	public ResponseEntity<List<User>> getMatchUser(@RequestParam("username") String username) {
+		try {
+			List<User> users = new ArrayList<User>();
+			userServiceImpl.findByMatch(username).forEach(users::add);
+			return new ResponseEntity<>(users, HttpStatus.OK);
+		} catch (Exception e) {
+			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@GetMapping(value = "/getUserById", produces = "application/json")
+	public ResponseEntity<User> getTutorialById(@RequestParam("id") Integer id) {
+		Optional<User> userData = userServiceImpl.findById(id);
+		if (userData.isPresent()) {
+			return new ResponseEntity<>(userData.get(), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+
+	@GetMapping("/pdfreport")
+	public ResponseEntity<InputStreamResource> citiesReport() throws IOException {
+		List<User> cities = (List<User>) userServiceImpl.findAll();
+		ByteArrayInputStream bis = GeneratePdfReport.citiesReport(cities);
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Disposition", "inline; filename=usersreport.pdf");
+		return ResponseEntity.ok().headers(headers).contentType(MediaType.APPLICATION_PDF)
+				.body(new InputStreamResource(bis));
+	}
+
+	@GetMapping("/excelreport")
+	public void exportToExcel(HttpServletResponse response) throws IOException {
+		response.setContentType("application/octet-stream");
+		DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
+		String currentDateTime = dateFormatter.format(new Date());
+		String headerKey = "Content-Disposition";
+		String headerValue = "attachment; filename=users_" + currentDateTime + ".xlsx";
+		response.setHeader(headerKey, headerValue);
+		List<User> listUsers = (List<User>) userServiceImpl.findAll();
+		UserExcelExporter excelExporter = new UserExcelExporter(listUsers);
+		excelExporter.export(response);
+	}
+
+}
