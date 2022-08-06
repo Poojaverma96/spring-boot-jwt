@@ -1124,3 +1124,36 @@ public class UserServiceImpl implements UserService {
 
 }
 
+############ Service interface ##############
+
+
+package com.project.demo.service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import com.project.demo.model.User;
+
+public interface UserService {
+
+	 User save(User user);
+
+	int updatePassword(String password, Integer id);
+
+	List<User> findAll();
+
+	List<User> findByMatch(String username);
+
+	Optional<User> findById(Integer id);
+
+	void deleteById(Integer id);
+	
+	User loadUserByUsername(String username);
+	
+	int updateLastLogin(String username);
+	
+	int getLoginCountInDay(String username);
+
+}
+
