@@ -1043,3 +1043,84 @@ public class TokenUserDetailsService implements UserDetailsService {
 	}
 
 }
+
+############# user service #############
+
+package com.project.demo.service.impl;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.project.demo.model.User;
+import com.project.demo.repository.UserRepository;
+import com.project.demo.service.UserService;
+
+@Service
+public class UserServiceImpl implements UserService {
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private PasswordEncoder bcryptEncoder;
+
+	public User save(User user) {
+		User newUser = new User();
+		newUser.setUsername(user.getUsername());
+		newUser.setPassword(bcryptEncoder.encode(user.getPassword()));
+		newUser.setLastLogin(user.getLastLogin());
+		newUser.setUserType(user.getUserType());
+		newUser.setEmailId(user.getEmailId());
+		return userRepository.save(newUser);
+	}
+
+	@Transactional
+	public int updatePassword(String password, Integer id) {
+		return userRepository.updatePassword(bcryptEncoder.encode(password), id);
+	}
+
+	@Transactional
+	public int updateLastLogin(String username) {
+		return userRepository.updateLastLogin(new Date(), username);
+	}
+
+	public Optional<User> findById(Integer id) {
+		return userRepository.findById(id);
+	}
+
+	public List<User> findAll() {
+
+		List<User> users = (List<User>) userRepository.findAll();
+
+		return users;
+	}
+
+	public List<User> findByMatch(String user) {
+
+		List<User> users = (List<User>) userRepository.findByUserContaining(user);
+
+		return users;
+	}
+
+	@Override
+	public void deleteById(Integer id) {
+		userRepository.deleteById(id);
+
+	}
+
+	public User loadUserByUsername(String username) {
+		return userRepository.loadUserByUsername(username);
+	}
+
+	public int getLoginCountInDay(String username) {
+		return userRepository.getLoginCountInDay(username);
+	}
+
+}
+
