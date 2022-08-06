@@ -1194,18 +1194,3 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 	int getLoginCountInDay(String username);
 }
 
-######### Application Property  #############
-jwt.secret=mysecret
-server.port=2022
-spring.datasource.url=jdbc:mysql://localhost:3306/projectdb
-spring.datasource.username=root
-spring.datasource.password=root
-spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-spring.main.allow-circular-references=true
-
-dailyLimit=20
-
-
-
