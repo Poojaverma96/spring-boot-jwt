@@ -1157,3 +1157,42 @@ public interface UserService {
 
 }
 
+###### User Repository
+package com.project.demo.repository;
+
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.project.demo.model.User;
+
+@Repository
+public interface UserRepository extends JpaRepository<User, Integer> {
+
+	User findByUsername(String username);
+
+	@Query(value = "Select * from User u where u.username like ?1%", nativeQuery = true)
+	List<User> findByUserContaining(String user);
+	
+	
+	@Modifying
+	@Query(value ="update User u set u.password = ?1 where u.id = ?2",nativeQuery = true)
+	int updatePassword(String password, Integer id);
+	
+	@Modifying
+	@Query(value ="update User u set u.lastLogin = ?1,u.loginLimit = u.loginLimit + 1 where u.username = ?2")
+	int updateLastLogin(Date lastLogin,String username);
+	
+	@Query(value = "Select * from User u where u.username = ?1", nativeQuery = true)
+	User loadUserByUsername(String username);
+	
+	@Query(value = "Select u.login_limit from User u where u.username = ?1 and DATE(last_login)= CURDATE()", nativeQuery = true)
+	int getLoginCountInDay(String username);
+	
+
+
+}
